@@ -1,0 +1,26 @@
+
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+model User{
+  id Int @id @default(autoincrement())
+  name String
+  email String @unique
+  password String
+  createdAt DateTime @default(now())
+  scans     ScanResult[]
+}
+model ScanResult {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  projectPath String
+  riskSeverity String // "LOW" | "MEDIUM" | "HIGH" 
+  status      String   // "PASS" or "BLOCK"
+  violations  Json     // stores the full violations array as JSON
+  scannedAt   DateTime @default(now())
+}
