@@ -132,16 +132,11 @@ The rule engine is designed to be easily extended with new security checks.
 
 # Installation
 
-# Clone the repository
+### Clone the repository
 git clone https://github.com/Dwij45/RepoAudit.git
 
-# Navigate into the project
 cd repoaudit
-
-# Install dependencies
 npm install
-
-# Start the development server
 npm run dev
 
 ---
