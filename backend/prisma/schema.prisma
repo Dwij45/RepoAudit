@@ -1,11 +1,12 @@
-
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  // url      = env("DATABASE_URL")
 }
+
 model User{
   id Int @id @default(autoincrement())
   name String
@@ -14,11 +15,10 @@ model User{
   createdAt DateTime @default(now())
   scans     ScanResult[]
 }
-model ScanResult {
+model ScanResult {  
   id          Int      @id @default(autoincrement())
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
-  projectPath String
   riskSeverity String // "LOW" | "MEDIUM" | "HIGH" 
   status      String   // "PASS" or "BLOCK"
   violations  Json     // stores the full violations array as JSON
