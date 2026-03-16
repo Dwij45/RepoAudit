@@ -38,7 +38,6 @@ export const RULES: ComplianceRule[] = [
     },
 
     // GITIGNORE RULES — checks that .gitignore covers critical entries
-    // Each rule uses type "gitignore_check" + the "requiredEntry" field.
     // The engine looks for this entry inside the .gitignore file content.
 
     // GIT001: .env must be in .gitignore
