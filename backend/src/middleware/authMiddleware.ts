@@ -9,15 +9,15 @@ if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not defined");
 }
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies.token;
+  const token = req.cookies?.token;
 
   if (!token) {
-    return res.status(401).json({ message: "Access denied. No token provided." });
+    return res.status(401).json({ message: "Access denied. No axcess provided." });
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-    (req as any).user = decoded; 
+    (req as any).userId = decoded.userId; 
     next();
   } catch (error) {
     res.clearCookie("token"); 

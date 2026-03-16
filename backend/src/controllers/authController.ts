@@ -1,12 +1,10 @@
 import type { Request, Response } from "express";
-// import prisma from "../db.js";
 
 import { generateToken } from "../config/tokengenration.js";
 import bcrypt from "bcrypt";
 import {z} from "zod";
 import jwt from "jsonwebtoken";
 import prisma from "../db.js";
-import { userInfo } from "os";
 
 
 const JWT_SECRET  = process.env.JWT_SECRET;
@@ -17,7 +15,15 @@ const userSchema = z.object({
 });
 const signup = async (req: Request, res: Response) => {
 
-       const { email, password, name } = userSchema.parse(req.body);
+    const parsed = userSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ 
+            message: "Invalid input", 
+            errors: parsed.error.issues 
+        });
+    }
+    const { email, password, name } = parsed.data;   
+
        if (!email || !password || !name) {
            return res.status(400).json({ message: "All fields are required" });
         }
@@ -32,14 +38,6 @@ const signup = async (req: Request, res: Response) => {
                 return res.status(400).json({ message: "Email already exists" });
             }
 
-            const parsed=userSchema.safeParse({ email, password, name });
-                if (!parsed.success) {
-                    const err = new Error('Invalid input');
-                    // err.status = 400;
-                    // err.details = parsed.error.issues;
-                    throw err;
-                }
-
             const hashedPassword = await bcrypt.hash(password, 10);
             const user = await prisma.user.create({
                 data:{
@@ -49,18 +47,17 @@ const signup = async (req: Request, res: Response) => {
                 }
             })
              generateToken(user.id, res);
-             
-             res.status(201).json(user);
+
+             return res.status(201).json({
+                 message: "User created successfully",
+                 user: { email, name }
+             });
         }
         catch(error){
             console.log(error);
-            return res.status(500).json({ message: error });
+            return res.status(500).json({ message: "internal server error"});
         }
         
-        return res.status(201).json({
-            message: "User created successfully",
-            user: { email, name }
-        });
 
 }
 
@@ -88,18 +85,71 @@ const login = async (req: Request, res: Response) =>{
     }
      generateToken(user.id, res);
 
-    return res.status(201).json({ 
+    return res.status(200).json({ 
       message: "User registered successfully", 
       user: { id: user.id, email: user.email, name: user.name } 
     });
-    res.status(200).json(user);
+
  }
  catch(error){
     console.log(error);
-    return res.status(500).json({ message: error });
+    return res.status(500).json({ message: "Auth fialed" });
  }
+}
+const logout = (req: Request, res: Response) => {
+    res.clearCookie("token");
+    res.status(200).json({ message: "Logged out successfully" });
+};
+const Profile = (async (req: Request, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+    // @ts-ignore  
+    where: { id: req.userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+const updateProfile = async (req: Request, res: Response) => {
+     try {
+    const { name, email } = req.body;
+
+    const updatedUser = await prisma.user.update({
+        // @ts-ignore
+      where: { id: req.userId },
+      data: {
+        name,
+        email
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true
+      }
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ message: "Update failed" });
+  }
 }
 export {
     signup,
-    login
+    login,
+    logout,
+    Profile,
+    updateProfile
 }
