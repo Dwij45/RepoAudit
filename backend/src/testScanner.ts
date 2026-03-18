@@ -1,7 +1,8 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { scanFiles } from "./scanner/fileScanner.js";
-import { runScan } from "./scanner/ruleEngine.js"; // Import the engine
+import { runScan } from "./scanner/ruleEngine.js";
+import { RULES } from "./scanner/rules.js";
 import { types } from "util";
 
 // 1. Point to your folder
@@ -18,7 +19,7 @@ const scan = () => {
     console.log(`Found ${files.length} files.`);
 
     // 3. Run Logic (The Brain)
-    const violations = runScan(files, TEST_FOLDER);
+    const violations = runScan(files, TEST_FOLDER, RULES);
 
     // 4. Print Report
     console.log(`\n VIOLATIONS FOUND: ${violations.length}`);
