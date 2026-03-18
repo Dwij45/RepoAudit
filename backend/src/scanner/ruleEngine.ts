@@ -1,8 +1,7 @@
 import fs from "fs";
 import path from "path";
-import { RULES } from "./rules.js";
 import type { ScannedFile } from "./fileScanner.js";
-import type { Violation } from "../types/index.js";
+import type { Violation, ComplianceRule } from "../types/index.js";
 
 /**
  * The Logic Engine
@@ -16,7 +15,7 @@ import type { Violation } from "../types/index.js";
  *   - "regex"           → Flags if a pattern is found inside file content
  */
 
-export const runScan = (files: ScannedFile[], projectPath: string): Violation[] => {
+export const runScan = (files: ScannedFile[], projectPath: string, rules: ComplianceRule[]): Violation[] => {
   const violations: Violation[] = [];
 
   // PRE-SCAN: Find .gitignore and read its content
@@ -35,7 +34,7 @@ export const runScan = (files: ScannedFile[], projectPath: string): Violation[] 
     // .gitignore exists — now check if each required entry is covered,
     // BUT ONLY if that file/folder actually exists in the project.
 
-    RULES.forEach((rule) => {
+    rules.forEach((rule) => {
       if (rule.type === "gitignore_check" && rule.requiredEntry) {
 
         // EXISTENCE CHECK: Does this file/folder actually exist in the project?
@@ -87,7 +86,7 @@ export const runScan = (files: ScannedFile[], projectPath: string): Violation[] 
     const { filePath, content } = fileObj;
     const fileName = path.basename(filePath);
 
-    RULES.forEach((rule) => {
+    rules.forEach((rule) => {
 
       // TYPE 1: File Existence Checks
       // Triggers when a specific file is found in the tree

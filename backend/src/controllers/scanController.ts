@@ -6,6 +6,7 @@ import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { scanFiles } from "../scanner/fileScanner.js";
 import { runScan } from "../scanner/ruleEngine.js";
+import { RULES } from "../scanner/rules.js";
 
 /**
  * POST /scan
@@ -20,24 +21,13 @@ export const scanner = async (req: Request, res: Response) => {
         const __filename = fileURLToPath(import.meta.url);
             const __dirname = path.dirname(__filename);
         
-            const projectPath = path.join(__dirname, "../test_data");
+            const projectPath = path.join(__dirname, "../../test_data");
 
         if (!projectPath) {
             return res.status(400).json({ message: "projectPath is required" });
         }
 
-        // --- STEP 1: Run the scan (available to EVERYONE) ---
-        const files = scanFiles(projectPath);
-        const violations = runScan(files, projectPath);
-
-        // Calculate risk
-        const highCount = violations.filter(v => v.severity === "HIGH").length;
-        const medCount = violations.filter(v => v.severity === "MEDIUM").length;
-        const riskScore = highCount * 3 + medCount * 1;
-        const status = highCount > 0 ? "BLOCK" : "PASS";
-        const riskSeverity = highCount > 0 ? "HIGH" : medCount > 0 ? "MEDIUM" : "LOW";
-
-        // --- STEP 2: Check if user is logged in (OPTIONAL — don't block if not) ---
+        // --- STEP 1: Check if user is logged in (OPTIONAL) ---
         let userId: number | null = null;
         let saved = false;
 
@@ -49,17 +39,47 @@ export const scanner = async (req: Request, res: Response) => {
                 const decoded = jwt.verify(token, secret) as { userId: number };
                 userId = decoded.userId;
             } catch {
-                // Token is invalid/expired — that's fine, just don't save
                 userId = null;
             }
         }
 
-        // --- STEP 3: If logged in, save to DB ---
+        // --- STEP 2: Merge Rules if logged in ---
+        let mergedRules = [...RULES];
+        if (userId) {
+            const userConfigs = await prisma.userRuleConfig.findMany({
+                where: { userId }
+            });
+
+            mergedRules = RULES
+                .filter(rule => {
+                    const config = userConfigs.find((c: any) => c.ruleId === rule.id);
+                    return config ? config.enabled : true;
+                })
+                .map(rule => {
+                    const config = userConfigs.find((c: any) => c.ruleId === rule.id);
+                    if (config?.severity) {
+                        return { ...rule, severity: config.severity as any };
+                    }
+                    return rule;
+                });
+        }
+
+        // --- STEP 3: Run the scan with merged rules ---
+        const files = scanFiles(projectPath);
+        const violations = runScan(files, projectPath, mergedRules);
+
+        // Calculate risk
+        const highCount = violations.filter(v => v.severity === "HIGH").length;
+        const medCount = violations.filter(v => v.severity === "MEDIUM").length;
+        const riskScore = highCount * 3 + medCount * 1;
+        const status = highCount > 0 ? "BLOCK" : "PASS";
+        const riskSeverity = highCount > 0 ? "HIGH" : medCount > 0 ? "MEDIUM" : "LOW";
+
+        // --- STEP 4: Save to DB if logged in ---
         if (userId) {
             await prisma.scanResult.create({
                 data: {
                     userId,
-                    projectPath,
                     riskSeverity,
                     status,
                     violations: violations as any,
