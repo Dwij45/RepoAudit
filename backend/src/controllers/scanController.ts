@@ -15,7 +15,7 @@ import { RULES } from "../scanner/rules.js";
  * If the user is logged in (has a valid token cookie), the result is ALSO saved to the DB.
  * If not logged in, they still get the scan result — just not saved.
  */
-export const scanner = async (req: Request, res: Response) => {
+export const scanFolder = async (req: Request, res: Response) => {
     try {
         // const { projectPath } = req.body;
         const __filename = fileURLToPath(import.meta.url);

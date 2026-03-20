@@ -26,24 +26,15 @@ export const RULES: ComplianceRule[] = [
     },
 
     // CONFIG RULES
-    // CFG001: .env file should NEVER be committed to Git
-    {
-        id: "CFG001",
-        name: ".env File Committed",
-        description: "HIGH RISK: The .env file contains sensitive secrets and should not be committed to Git.",
-        severity: "HIGH",
-        category: "CONFIG",
-        type: "file_existence",
-        targetFile: ".env"
-    },
 
+   
     // GITIGNORE RULES — checks that .gitignore covers critical entries
     // The engine looks for this entry inside the .gitignore file content.
 
     // GIT001: .env must be in .gitignore
     {
         id: "GIT001",
-        name: ".env Not in .gitignore",
+        name: ".env Not in .gitignore/.env File Committed",
         description: "SECURITY: '.env' is missing from .gitignore. Your secrets will be exposed if you push to Git.",
         severity: "HIGH",
         category: "CONFIG",
